@@ -1,0 +1,6 @@
+스프링의 IoC 컨테이너는 일반적으로 ApplicationContext를 말한다.
+스프링의 빈 팩토리와 어플리케이션 컨텍스트는 각각 기능을 대표하는 BeanFactory와 ApplicationContext라는 두 개의 인터페이스로 정의되어 있다.
+
+ApplicationContext 인터페이스는 BeanFactory 인터페이스를 상속한 서브인터페이스이다.
+
+각자 기능에 충실하게 독립적으로 설계된 POJO 클래스를 만들고, 결합도가 낮은 유연한 관계를 가질 수 있도록 인터페이스를 이용ㅎ 연결해주는 것까지가 IoC 컨테이너가 사용할 POJO를 준비하는 첫 단계이다.
