@@ -24,3 +24,4 @@ BeanDefinition의 메타 정보
 2. GenericApplicationContext
 가장 일반적이 컨텍스트의 구현 클래스. 실전에서 사용될 수 있는 모든 기능을 갖추고 있는 어플리케이션 컨텍스트다.
 StaticApplicationContext와 달리 XML파일과 같은 외부의 리소스에 있는 빈 설정 메타정보를 리더를 통해 읽어들여서 메타정보로 전환해 사용한다.
+특정 포맷의 빈 설정 메타정보를 읽어서 컨텍스트가 사용할 수 있는 BeanDefinition 정보로 변환하는 기능을 가진 오브젝트는 BeanDefinitionReader 인터페이스를 구현해서 만든다.
