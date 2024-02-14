@@ -1,6 +1,4 @@
-package chapter1;
-
-import chatper1.Printer;
+package springbook.learningtest.spring.ioc.bean;
 
 public class Hello {
     String name;

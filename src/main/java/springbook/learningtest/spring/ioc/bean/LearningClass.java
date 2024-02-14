@@ -1,4 +1,4 @@
-package chatper1;
+package springbook.learningtest.spring.ioc.bean;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.RootBeanDefinition;
