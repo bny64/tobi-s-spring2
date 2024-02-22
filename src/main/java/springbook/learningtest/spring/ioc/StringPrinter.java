@@ -1,4 +1,4 @@
-package springbook.learningtest.spring.ioc.bean;
+package springbook.learningtest.spring.ioc;
 
 public class StringPrinter implements Printer {
 

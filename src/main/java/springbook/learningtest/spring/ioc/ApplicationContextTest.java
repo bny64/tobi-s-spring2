@@ -1,4 +1,4 @@
-package springbook.learningtest.spring.ioc.bean;
+package springbook.learningtest.spring.ioc;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,8 +11,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
-
-import java.util.Arrays;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -46,17 +44,19 @@ public class ApplicationContextTest {
         String msg = hello.printer.toString();
         System.out.println(msg);
 
-//        ApplicationContext parent = new GenericXmlApplicationContext(basePath + "parentContext.xml");
-        //아래처럼 어플리케이션을 생성할 때 앞에서 만든 parent를 부모 컨텍스트로 지정해준다.
-        //새롭게 만들어지는 child라는 이름의 어플리케이션 컨텍스트는 parent 컨텍스트를 부모 컨텍스트로 갖게 된다.
-//        GenericApplicationContext child = new GenericApplicationContext(parent);
-//
-//        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(child);
-//        reader.loadBeanDefinitions(basePath + "childContext.xml");
-//        child.refresh();
-//
-//        Printer printer = child.getBean("printer", Printer.class);
-//        System.out.println(printer.toString());
+        //부모 컨텍스트 생성
+        ApplicationContext parent = new GenericXmlApplicationContext(basePath + "parentContext.xml");
+        //자식 컨텍스트 생성시 부모 컨텍스트 지정
+        //아래처럼 지정하면 새로 만들어지는 child라는 이름의 어플리케이션 컨텍스트는 parenㅅ 컨텍스트를 부모 컨텍스트로 갖게 된다.
+        GenericApplicationContext child = new GenericApplicationContext(parent);
+
+        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(child);
+        reader.loadBeanDefinitions(basePath + "childContext.xml");
+        child.refresh(); //reader를 사용해서 설정을 읽은 경우에는 반드시 refresh()로 초기화해야 한다.
+
+        //부모 컨텍스트에서 printer를 찾는다.
+        Printer printer = child.getBean("printer", Printer.class);
+        System.out.println(printer.toString());
 
     }
 
