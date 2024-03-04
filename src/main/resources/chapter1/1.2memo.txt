@@ -29,4 +29,43 @@ annotationMetadata : 빈 클래스에 담긴 애노테이션과 그 애트리뷰
     스프링은 이런 기술적인 설정과 기반 서비스를 빈으로 등록할 때를 위해 의미가 잘 드러나는 네임 스페이스와 태그를 가진 설정방법을 제공한다.
     <aop:pointcut id="mypointcut" expression"..."/>
 
-3.
+3. 자동인식을 이용한 빈 등록: 스테레오타입 애노테이션과 빈 스캐너
+    특정 어노테이션이 붙은 클래스를 자동으로 찾아서 빈 등록을 해주는 방식을 빈 스캐닝을 통한 자동인식 빈 등록 기능이라고 하고, 이런 스캐닝 작업을 담당하는 오브젝트를 빈 스캐너라고 한다.
+    빈 스캐너에 내장된 디폴트 필터는 @Component 어노테이션 또는 @Component를 메타 어노테이션으로 가진 어노테이션이 부여된 클래스를 선택하도록 되어 있다.
+    @Component를 포함해 디폴트 필터에 적용되는 어노테이션을 스프링에서 스테레오 어노테이션이라고 부른다.
+    빈 스캐너는 기본적으로 클래스 이름을 빈의 ID로 사용한다. 정확히는 클래스 이름의 첫 글자만 소문자로 바꾼 것을 사용한다.
+    빈의 이름을 클래스 이름과 다르게 지정해야 할 때가 있다. 이름이 같은 빈이 이미 존재하기 때문에 충돌을 피하기 위해서이거나, 좀 더 의미 있는 이름을 사용하고 싶을 때 @Component 디폴트 값을 이용해 빈 이름을 지정할 수 있다.
+    빈의 개수가 많아지면 XML 문서를 보고 전체 어플리케이션의 구성을 간단히 파악하기 어렵다.
+    누군가 책임을 지고 어플리케이션을 구성하는 빈과 의존관계, 설정 등을 통제하고 관리하는 데는 XML이 유리하다.
+    빈 스캔에 의해 자동등록되는 빈은 XML처럼 상세한 메타정보 항목을 지정할 수 없다. 클래스당 한 개 이상의 빈을 등록할 수 없다는 제한이 있다.
+    그러나 대부분의 빈은 디폴트 메타정보 항목이면 충분하다.
+    자동인식을 통한 빈 등록을 사용하려면 두 가지 방법이 있다.
+        1. XML을 이용한 빈 스캐너 등록
+          XML 설정 파일에 <context:component-scan> 태그를 넣어주기만 하면 된다.
+          ex) <context:component-scan base-package="springbook.learningtest.spring.ioc.bean />
+        2. 빈 스캐너를 내장한 어플리케이션 컨텍스트 사용
+          XML에 빈 스캐너를 지정하는 대신 아예 빈 스캐너를 내장한 컨텍스트를 사용하는 방법도 있다.
+          루트 컨텍스트가 XML 대신 빈 스캐너를 이용해 빈을 등록하도록 web.xml 안에 컨텍스트 파라미터를 설정할 수 있다.
+          <context-param>
+            <param-name>contextClass</param-name>
+            <param-value>
+                org.springframework.web.context.support.AnnotationConfigWebApplicationContext
+            </param-value>
+          </context-param>
+          <context-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>
+              springbook.learningtest.springtest.spring.ioc.bean
+            </param-value>
+          </context-param>
+4. 자바 코드에 의한 빈 등록: @Configuration 클래스의 @Bean 메서드
+    자바 코드에 의한 빈 등록 방법은 코드가 빈 오브젝트를 만들고 DI 등의 초기화 작업을 한다는 면에서 팩토리 빈과 유사하다. 하지만 그보다 훨씬 편리하고 강력한 방법을 제공한다.
+    클래스에 @Configuration을 선언하고 해당 클래스 내에서 @Bean 어노테이션이 붙은 메서드를 이용해 빈을 생성한다.
+    @Configuration
+    public class HelloConfig {
+        @Bean
+        public Hello hello() {
+            return new Hello();
+        }
+    }
+    스프링은 기본적으로 싱글톤 빈을 생성한다. 하지만 스프링 컨테이너 밖에서 새로운 인스턴스가 만들어진다면 이것은 싱글톤이 아니라 매번 새로운 인스턴스가 생성된다는 걸 인지해야 한다. 그래서 @Configuration, @Bean을 사용하는 클래스는 순수한 오브젝트 팩토리 클래스라기보다는 자바 코드로 표현되는 메타정보라고 이해하는 것이 좋다.

@@ -5,12 +5,15 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
+import springbook.learningtest.spring.ioc.bean.AnnotatedHello;
+import springbook.learningtest.spring.ioc.bean.AnnotatedHelloConfig;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -58,6 +61,17 @@ public class ApplicationContextTest {
         Printer printer = child.getBean("printer", Printer.class);
         System.out.println(printer.toString());
 
+    }
+
+    @Test
+    public void simpleBeanScanning() {
+        ApplicationContext ctx = new AnnotationConfigApplicationContext("springbook.learningtest.spring.ioc.bean");
+        AnnotatedHello hello = ctx.getBean("myAnnotatedHello", AnnotatedHello.class);
+        System.out.println(hello);
+
+        ctx = new AnnotationConfigApplicationContext(AnnotatedHelloConfig.class);
+        AnnotatedHello hello2 = ctx.getBean("annotatedHello", AnnotatedHello.class);
+        System.out.println(hello2);
     }
 
 }
