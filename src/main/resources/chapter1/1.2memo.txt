@@ -96,3 +96,59 @@ annotationMetadata : 빈 클래스에 담긴 애노테이션과 그 애트리뷰
         자동인식 방식으로 설정하기 어려운 DataSource, 트랜잭션 매니저 등은 <bean>태그를 사용해 설정할 수 있다.
         빈 스캐닝과 XML을 혼용하는 방법은 각 방법의 장점을 살려서 적용하면 매우 효과적이다.
         단 스캔 대상이 되는 클래스를 위치시킬 패키지를 미리 결정해둬야 한다는 점을 주의해야 한다.
+        만약 UserService 클래스가 루트 어플리케이션 컨텍스트에 등록되어야 하는 서비스 계층의 빈이다.
+        만약 UserService가 서블릿 컨텍스트에도 등록되어버렸을 때 어떻게 될까?
+        컨텍스트 계층구조에서 빈을 찾을 때는 자신의 컨텍스트를 검색하고 없을 때 부모 컨텍스트를 찾는다.
+        이 때 서블릿 컨텍스트에 만들어진 UserService 빈을 사용하게 된다.
+        서블릿 컨텍스트에는 트랜잭션 AOP 설정이 없으므로 서블릿 컨텍스트에서 만들어진 UserService 빈에는 트랜잭션이 적용되지 않는다.
+        웹 어플리케이션의 이중 컨텍스트 계층 구조와 빈 검색 우선순위를 잘 이해하고 빈 스캐닝 설정을 제공할 때 중복 등록이 발생하지 않도록 주의해야 한다.
+    3. XML 없이 빈 스캐닝 단독 사용
+        주요한 컨테이너 설정과 기반 서비스를 위한 설정은 모두 자바 코드에 의한 빈 설정 방식을 사용해야 한다.
+        웹 어플리케이션에 적용하려면 루트 컨텍스트와 서블릿 컨텍스트 모두 contextClass 파라미터를 추가해 AnnotationConfigWebApplicationContext로 컨텍스트 클래스를 변경해줘야 한다.
+        contextLocations 파라미터에는 스캔 대상 패키지를 넣어줘야 한다.
+        이 방식의 장점은 모든 빈의 정보가 자바 코드에 담겨있으므로 빈의 설정정보를 타입에 안전한 방식으로 작성할 수 있다.
+        하지만 스프링이 미리 제공해주는 aop, tx 등 비롯한 10여 개의 스키마와 그 안에 정의된 전용 태그를 쓸 수 없다는 단점이 있다.
+
+빈 의존관계 설정 방법
+    1. XML: <property>, <constructor-arg>
+    프로퍼티와 생성자 두 가지 방식으로 DI를 지정할 수 있다.
+    프로퍼티는 자바빈 규약을 따르는 수정자 메서드를 사용하고, 생성자는 빈 클래스의 생성자를 이용하는 방법이다.
+    두 가지 모두 파라미터로 의존 오브젝트 또는 값을 주입해준다.
+        - <property> 수정자 주입
+            <bean>
+                <property name="printer" ref="defaultPrinter" />
+            </bean>
+
+            <bean id="defaultPrinter" class="...">
+            다음과 같이 ref 애트리뷰트를 사용하면 빈 이름을 이용해 주입할 빈을 찾는다.
+
+            <property name="name" value="Spring"/>
+            <property name="age" value="30"/>
+            <property name="myClass" value="java.lang.String" />
+            value 애트리뷰트로 넣을 수 있는 값의 타입에는 제한이 없다.
+            다양한 종류의 클래스도 value를 이용해 주입할 수 있다.
+            myClass는 String 타입의 문자열 같지만 Class 타입이다.
+            수정자의 파라미터 타입을 보고 java.lang.String 문자열을 java.lang.String 클래스 오브젝트로 변환해준다.
+            적절한 변환기를 컨테이너에 등록하면 어떤 오브젝트도 value 애트리뷰트의 값으로부터 생성해서 프로퍼티에 주입할 수 있다.
+            XML의 <property>에는 해당 프로퍼티 타입이 나타나지 않기 때문에 값의 타입이 호환되는지 주의를 기울여서 작성해야 한다.
+        - <constructor-arg> 생성자 주입
+            생성자 파라미터는 파라미터의 순서나 타입을 명시하는 방법이 필요하다.
+            public Hello(String name, Printer printer){
+                this.name = name;
+                this.printer = printer;
+            }
+
+            <bean id="hello" class="springbook.learningtest.spring.ioc.bean.Hello">
+                <constructor-arg index="0" value="Spring"/>
+                <constructor-arg index="1" ref="printer"/>
+            </bea>
+
+            ref, value 애트리뷰트는 <property>에서 동일한 의미라고 보면 된다.
+            타입이 중복되지 않다면 아래와 같이 사용할 수 있다.
+            <constructor-arg type="java.lang.String" value="Spring" />
+            <constructor-arg type="springbook.learningtest.spring.ioc.bean.Printer" ref="printer" />
+
+    2. XML: 자동와이어링
+        XML 문서의 양을 대폭 줄여줄 수 있는 획기적인 방법이다. 명시적으로 프로퍼티나 생성자 파라미터를 지정하지 않고 미리 정해진 규칙을 이용해 자동으로 DI 설정을 컨테이너에 추가하는 방법이다.
+
+        -byName: 빈 이름 자동 와이어링
