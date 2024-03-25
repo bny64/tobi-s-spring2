@@ -174,3 +174,88 @@ annotationMetadata : 빈 클래스에 담긴 애노테이션과 그 애트리뷰
         관례적으로 전용 태그에 의해 만들어지는 빈을 다른 빈이 참조할 경우 id 애트리뷰트를 사용해 빈의 아이디를 지정한다.
         <oxm:jaxb2-marshaller id="unmarshaller" contextPath="..." />
         이 태그에 의해 몇 개의 빈이 만들어지는지는 알 수 없지만 Marshaller 인터페이스를 구현한 빈이 하나 만들어질 것이고, 그 아이디가 unmarshaller라는 것은 알 수 있다.
+        스프링의 전용 태그는 보통 -ref로 끝나는 애트리뷰트를 이용해 DI 할 빈을 지정하는 관례가 있다.
+        AOP 어드바이저 빈을 <aop:advisor>로 선언했을 때 DI 받을 advice 빈의 아이디는 advice-ref로, 포인트 컷 빈의 아이디는 pointcut-ref로 지정할 수 있었다.
+        포인트컷 표현식을 내장하는 경우에는 ref가 붙지 않는 pointcut 애트리뷰트를 사용한다.
+        -ref가 붙는 경우와 붙지 않는 경우에 분명한 차이가 있으니 주의.
+        <aop:config>
+            <aop:advisor advice-ref="transactionAdvice" pointcut="bean(*Service)"/>
+        </aop:config>
+        <bean id="transactionAdvice" ...>
+        기술 서비스나 기반 서비스의 경우는 가능한 id를 이용해 명시적으로 선언하는 것이 바람직하다.
+
+    4. 애노테이션: @Resource
+        @Resource는 <property> 선언과 비슷하게 주입할 빈을 아이디로 지정하는 방법이다.
+            - 수정자 메서드
+            수정자(setter)는 가장 대표적인 DI방법이다.
+            public class Hello {
+                private Printer printer;
+
+                @Resource(name="printer") <property name="printer" ref="printer"/>와 동일한 의존관계 메타정보로 변환된다.
+                public void setPrinter(Printer printer){
+                    this.printer = printer;
+                }
+            }
+            @Resource와 같은 애노테이션으로 된 의존관계 정보를 이용해 DI가 이뤄지게 하려면 세 가지 방법중 하나를 사용한다.
+            - XML <context:annotation-config/>
+            - XML <context:component-scan/>
+            - AnnotationConfigApplicationContext 또는 AnnotationConfigWebApplicationContext
+
+            <context:annotation-config/>에 의해 등록되는 빈 후처리기는 AO의 프록시 생성기처럼 새로운 빈을 등록해주지 않는다. 대신 이미 등록된 빈의 메타정보에 프로퍼티 항목을 추가해주는 작업을 한다.
+            빈 스캐닝은 항상 애노테이션 의존관계를 지원한다고 기억하면 된다.
+            루트 컨텍스트나 서블릿 컨텍스트를 아예 애노테이션 방식으로 변경했을 경우에도 동일하게 자동 지원된다.
+
+            - 필드
+            @Resource는 필드에도 붙을 수 있다. 수정자가 없어도 된다.
+            이런 방법을 필드 주입이라고 한다.
+            단위 테스트가 필요한 클래스라면 수정자 없는 필드 주입을 사용하는 건 바람직하지 못하다.
+            수정자가 필요 없는 필드 주입 @Resource의 대표적인 적용 예는 DAO에 DataSource를 DI하는 경우다.
+            DataSource를 목 오브젝트로 만들어 테스트하기는 매우 어려울뿐더러 별 장점이 없다. 이럴 경우에 사용하는 것이 바람직하다.
+
+            @Resource는 자동 와이어링처럼 참조하는 빈의 이름을 생략할 수도 있다.
+            @Resource
+            private Printer printer;
+
+            name 엘리먼트를 생략하면 DI 할 빈의 이름이 프로퍼티나 필드 이름과 같다고 가정한다.
+            위의 경우라면 name="printer"라고 한 것과 마찬가지이다.
+            XML의 자동와이어링은 각 프로퍼티에 주입할 만한 후보 빈이 없을 경우 무시하고 넘어간다. 빈 전체 프로퍼티 중에서 DI 가능한 것만 찾아내서 주입해주는 상당히 느슨한 방법이다.
+            반면에 @Resource는 자동 와이어링처럼 프로퍼티 정보를 코드와 관례를 이용해서 생성해내지만 DI 적용 여부를 프로퍼티마다 세밀하게 제어할 수 있다는 점에서 다르다.
+            @Resource가 붙어 있으면 반드시 참조할 빈이 존재해야 하며 DI할 빈을 못찾을 경우 예외가 발생한다.
+            디폴트 이름으로는 참조할 빈을 찾을 수 없을 경우에는 타입을 이용해 다시 한 번 빈을 찾기도 하지만 권장하고 싶지 않다.
+            드물지만 빈에서 어플리케이션 컨텍스트에 접근해야 할 때 다음과 같이 적으면 된다.
+            @Resource
+            ApplicationContext context;
+            위 사용법을 제외하면 @Resource는 이름을 이용한 프로퍼티 설정이라고 기억해두는 편이 좋다.
+
+        5. 애노테이션: @Autowired/Inject
+            @Autowired는 스프링 2.5부터 적용된 스프링 전용 애노테이션이고 @Inject는 JavaEE 6 표준스텍에 정의되어 있는 것으로, 스프링 외에도 JavaEE 6의 스펙을 따르는 프레임워크에서 동일한 의미로 사용하는 DI를 위한 애노테이션이다.
+            @Autowired는 XML의 타입에 의한 자동와이어링 방식을 생성자, 필드, 수정자 메서드, 일반 메서드의 네 가지로 확장한 것이다.
+            - 수정자 메서드와 필드
+            @Resource와 사용방법이 비슷하지만 이름 대신 필드나 프로퍼티 타입을 이용해 후보 빈을 찾는다.
+            public class Hello {
+                @Autowired
+                private Printer printer;
+
+                @Autowired
+                public void setPrinter(Printer printer){
+                    this.printer = printer;
+                }
+            }
+
+            - 생성자
+            @Autowired는 @Resource와 다르게 생성자에도 부여할 수 있다.
+            이 때는 생성자의 모든 파라미터에 타입에 의한 자동와이어링이 적용된다.
+            public class BasSqlService implements SqlService {
+                protected SqlReader sqlReader;
+                protected SqlRegistry sqlRegistry;
+
+                @Autowired
+                public BasSqlService(SqlReader sqlReader, SqlRegistry sqlRegistry){
+                    this.sqlReader = sqlReader;
+                    this.sqlRegistry = sqlRegistry;
+                }
+            }
+            @Autowired는 단 하나의 생성자에만 사용할 수 있다.
+            수정자 또는 필드를 이용한 DI 방식보다는 생성자 주입을 선호한다면 @Autowired를 사용하면 된다.
+
+            - 일반 메서드
