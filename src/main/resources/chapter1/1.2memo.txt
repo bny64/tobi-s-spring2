@@ -429,3 +429,133 @@ annotationMetadata : 빈 클래스에 담긴 애노테이션과 그 애트리뷰
 1.2.4 프로퍼티 값 설정 방법
     DI를 통해 빈에 주입되는 것은 두 가지다.
     하나는 다른 빈 오브젝트의 레퍼런스이고, 하나는 단순 값이다.
+    스프링에서 말하는 값이란 스프링이 관리하는 빈이 아닌 모든 것을 말한다.
+
+    보통 싱글톤은 동시성 문제 때문에 필드 값을 함부로 수정하지 않는다. 대개는 상태가 없는 방식으로 만들기 때문에 필드에 있는 값은 읽기전용인 경우가 대부분이다.
+
+    - 메타정보 종류에 따른 값 설정 방법
+    값을 넣는 방법도 빈 등록 방법과 마찬가지로 네 가지로 구분해서 살펴보자
+
+        - XML: <property>와 전용 태그
+        <property>는 ref 애트리뷰트를 이용해 다른 빈의 아이디를 지정한다. 만약 ref 대신 value 애트리뷰트를 사용하면 런타임 시 주입할 값으로 인식한다.
+        기본 타입이 아닌 경우 스프링 컨테이너는 XML의 문자열로 된 값을 프로퍼티 타입으로 변호나해주는 변환 서비스를 내장하고 있다.
+        스키마에 정의된 전용 태그에서는 ref로 끝나는 애트리뷰트 외에는 대부분 프로퍼티 값이라고 생각하면 된다.
+        <aop:advisor advice-ref="transactionAdvice" pointcut="bean(*Service)" />
+        위 <aop:advisor> 태그의 pointcut 애트리뷰트는 스트링 타입의 값이다.
+
+        - 애노테이션 @Value
+        빈이 사용해야 할 단순한 값이나 오브젝트를 코드에 담지 않고 설정을 통해 런타임 시에 주입해주는 이유는 환경에 따라 달라지는 DataSource 같은 값이다.
+        그 외에도 파일 경로처럼 환경에 의존적인 정보이거나 작업에 대한 타임아웃처럼 상황에 따라 달라질 수 있는 값을 소스코드의 수정 없이 지정해주기 위해서다.
+        @Value 애노테이션은 스프링 컨테이너가 참조하는 정보이지 그 자체로 클래스의 필드에 값을 넣어주는 기능이 있는 것은 아니다.
+        테스트 코드와 같이 컨테이너 밖에서 사용된다면 @Value 애노테이션은 무시된다.
+        @Value로 값을 설정해준다는 건 자바 코드와 컨테이너가 런타임 시에 주입하는 정보를 분리하겠다는 의미이고, 외부로 부터의 주입을 통한 초기화가 반드시 필요하다고 이해할 수 있다.
+        @Value 애노테이션은 시스템 프로퍼티의 os.name 값을 가져와 name에 넣어준다.
+
+        @Value("#{systemProperties['os.name']}")
+        String name;
+
+        또는 다음과 같이 환경정보를 담은 프로퍼티 파일을 따로 만들어두고 그 값을 가져올 수 있다.
+
+        @Value("${database.username}")
+        String username;
+
+        <context:property-placeholder location="classpath:database.properties"/>
+        @Value는 필드와 수정자, 메서드 파라미터에 사용할 수 있다.
+
+        - 자바 코드 @Value
+        @Configuration과 @Bean을 사용하는 경우에도 프로퍼티 값을 외부로 독립시킬 수 있다.
+
+        @Configuration
+        public class Config {
+            @Value("${database.username}")
+            private String name;
+
+            @Bean
+            public Hello hello() {
+                Hello hello = new Hello(this.name);
+                return hello;
+            }
+        }
+
+        또는 @Bean 메서드의 파라미터에 @Value를 직접 사용할 수 있다.
+        @Bean
+        public Hello hello(@Value("${database.username}") String name){
+            Hello hello = new Hello();
+            hello.setName(name);
+            return hello;
+        }
+
+        - PropertyEditor와 ConversionService
+        값이 아닌 그 외의 타입인 경우라면 타입을 변경하는 과정이 필요하다.
+        스프링은 두 가지 종류의 타입 변환 서비스를 제공한다. 디폴트로 사용되는 변환기는 PropertyEditor라는 java.beans의 인터페이스를 구현한 것이다.
+        @Value의 스트링 값에서 빈 오브젝트의 프로퍼티 타입으로 변경하는데 활용한다.
+            - 기본 타입
+            boolean, Boolean, byte, Byte, short, Short, int, Integer, long, Long, float, Float, double, Double, BigDecimal, BigInteger, char, Character, String
+            @Value("1.2") double rate; => double로 변환된다.
+            value 애트리뷰트는 스트링 타입이다. 항상 문자열로 만들어 넣어줘야 한다.
+
+            - 배열
+            기본 타입의 배열로 선언된 프로퍼티에는 한 번에 배열 값을 주입할 수 있다. 콤마로 구분해서 넣어주면 된다.
+            @Value("1,2,3,4") int[] intarr;
+
+            - 기타
+            Charset, Class, Currency, InputStream... 등등
+            문자열로 각 타입의 값을 어떻게 나타낼 수 있는지는 각 프로퍼티 에디터의 API 문서를 참조하면 된다.
+            각 타입의 프로퍼티 에디터는 이름 뒤에 Editor를 붙여주면 된다.
+            예를 들어 문자열을 Charset 타입의 오브젝트로 변환하는 일은 CharsetEditor가 담당한다.
+            스프링 3.0부터는 PropertyEditor 대신 사용할 수 있는 ConversionService를 지원하기 시작했다.
+            스프링이 직접 제공하는 변환기이며 PropertyEditor와 달리 멀티스레드 환경에서 공유해 사용될 수 있다.
+            컨테이너가 스프링 빈의 값을 주입하는 작업에는 기본 변환기인 PropertyEditor로 충분하다.
+            ConversionService를 사용하고 싶다면 아래와 같이 사용하면 된다.
+            <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+                <property name="converters">
+                    <bean class="springbook.converter.MyTypeConverter"/>
+                </property>
+            </bean>
+
+            - 컬렉션
+            스프링은 List, Set, Map, Property와 같은 컬렉션 타입을 XML로 작성해서 프로퍼티에 주입하는 방법을 제공한다.
+            value는 애트리뷰트를 통해 스트링 값을 넣는 대신 컬렉션 선언용 태그를 사용해야 한다.
+            <property>의 value 애트리뷰트는 생략된다.
+
+                - List, Set
+                <list>와 <value>를 이용해 선언한다.
+                <property name="names">
+                    <list>
+                        <value>String</value>
+                        <value>IoC</value>
+                        <value>DI</value>
+                    </list>
+                </property>
+
+                - Map
+                <property name="ages">
+                    <map>
+                        <entry key="Kim" value="30"/>
+                        <entry key="lee" value="35"/>
+                        <entry key="Ahn" value="40"/>
+                    </map>
+                </property>
+
+                -Properties
+                java.util.Properties 타입
+                <property name="settings">
+                    <props>
+                        <prop key="username">Spring</prop>
+                        <prop key="password">Book</prop>
+                    </props>
+                </property>
+
+                컬렉션에는 값만 들어가는 것만 아니라 <value> 대신 <ref bean=""> 태그를 사용하면 아래처럼 빈의 레퍼런스에 대한 컬렉션을 정의할 수 있다.
+                <property name="beans">
+                    <list>
+                        <ref bean="beanA"/>
+                        <ref bean="beanB"/>
+                    </list>
+                </property>
+                컬렉션을 사용할 때는 가능한 한 타입 파라미터를 제공해서 컨테이너가 적합한 타입 변환기를 적용할 수 있게 해야 한다.
+                프로퍼티를 List files라고 선언하는 대신 List<File> files라고 해주면 컨테이너에게 타입 변환을 위한 정보를 제공해줄 수 있다.
+                같은 타입의 빈을 컬렉션으로 만들어야 할 때는 XML에 직접 지정하는 대신 @Autowired와 컬렉션 타입의 프로퍼티를 이용하면 편리하다.
+                컬렉션을 프로퍼티의 값으로 선언하는 대신 독립적인 빈으로 만들 수도 있다. 컬렉션 오브젝트가 아이디를 가진 빈이 되므로 여러 빈에서 공통적으로 참조할 수도 있다. 컬렉션을 별도로 선언할 때는 util 스키마 전용 태그를 활용하면 된다.
+
+                - <util:list>, <util:set>
